@@ -1,6 +1,9 @@
 ---
 title: "Intro to dplyr, Part 2 -  Lab"
-output: html_document
+author: "Luis G"
+output: 
+  html_document: 
+    highlight: espresso
 ---
 
 ```{r}
@@ -26,7 +29,10 @@ my_flights <- flights ## getting a copy of the data in the environment
 1. Use functions to inspect it: how many rows and columns does it have? What are the names of the columns? Hint: Use `??flights` to search for documentation on the data set (for what the columns contain)
 
 ```{r}
+help(flights)
 
+nrow(flights)
+ncol(flights)
 ```
 
 
@@ -36,27 +42,33 @@ New skill: Use `.before = 1` as an argument to `mutate` to add the new variables
 
 
 ```{r}
+new_flight_ds <- flights %>% 
+mutate(gain = dep_delay - arr_delay, speed = distance / air_time * 60, .before = 5)
 
+new_flight_ds
 ```
 
 
 3. Use `dplyr` to sort your data frame in descending order by the column you just created. Remember to save this as a variable (or in the same one!)
 
 ```{r}
+new_flight_ds <- new_flight_ds %>% 
+arrange(gain)
 
+new_flight_ds
 ```
 
 4. If you haven't already, do the last 2 steps in a single statement using the pipe operator. 
 
 ```{r}
-
+paste("Already done 😎")
 ```
 
 
 5. On average, did flights gain or lose time? Note: use the `na.rm = TRUE` argument to remove NA values from your calc
 
 ```{r}
-
+new_flight_ds %>% summarise( avg_gain = mean(gain, na.rm =T)) 
 
 ```
 
@@ -64,7 +76,12 @@ New skill: Use `.before = 1` as an argument to `mutate` to add the new variables
 6. Create a data.frame of flights with a destination of Hobby Airport (Airport code 'HOU'), only including the origin, destination, and the "made_up_time" column you just created
 
 ```{r}
+houston_dest <- new_flight_ds %>% 
+filter(dest == "HOU") %>% 
+select(origin, dest, gain) 
 
+
+houston_dest
 ```
 
 
@@ -72,7 +89,9 @@ New skill: Use `.before = 1` as an argument to `mutate` to add the new variables
 
 
 ```{r}
-
+new_flight_ds %>% 
+filter(dest == "SEA") %>% 
+summarise(avg_gain = mean(gain, na.rm = T))
 
 ```
 
@@ -83,6 +102,12 @@ New skill: Use `.before = 1` as an argument to `mutate` to add the new variables
 Go back to our flights exercise data. Consider flights from JFK to SEA. What was the average, min, and max air time of those flights? Use pipes to answer this question in one statement (without showing any other data)!
 
 ```{r}
+flights %>% 
+  filter(origin == "JFK", dest == "SEA") %>% 
+    summarise(
+    avg_air = mean(air_time, na.rm = T),
+    min_air = min(air_time, na.rm = T),
+    air_max = max(air_time, na.rm = T))
 
 
 ```
@@ -90,22 +115,27 @@ Go back to our flights exercise data. Consider flights from JFK to SEA. What was
 Consider flights coming into Houston (HOU and IAH). What is the mean arrival delay by departure airport? 
 
 ```{r}
-
+flights %>% 
+  filter(dest == "HOU" | dest == "IAH") %>% 
+  group_by(origin) %>% 
+  summarise(avg_delay = mean(arr_delay, na.rm = T))
+  
 
 ```
 
 Find the flights that are most delayed upon departure from each origin.
 
 ```{r}
-
+flights %>% 
+group_by(origin) %>% 
+summarise(max_delay = mean(arr_delay, na.rm = T))
 
 ```
 
 Getting ready for next class: look at all the different values for the  airport.
 
 ```{r}
-
-
+head(airports)
 ```
 
 Hmm... I don't know about you, but it sure does seem like there are some values here I don't recognize! 
@@ -117,7 +147,7 @@ Hmm... I don't know about you, but it sure does seem like there are some values 
 In the package `dplyr` there is a dataset called `starwars`. You'll see this again in the homework (it's just easier to use built-in data!).
 
 ```{r}
-glimpse(starwars)
+head(starwars)
 ```
 
 
@@ -127,7 +157,9 @@ We're going to use this to practice some data wrangling with `dplyr`.
 How many characters are from each planet?
 
 ```{r}
-
+homeworld_count <- starwars %>% 
+  group_by(homeworld) %>% 
+  summarise(count = n()) 
 
 
 ```
@@ -135,29 +167,34 @@ How many characters are from each planet?
 If you wanted to arrange this in descending order, what would you add to the pipe? 
 
 ```{r}
-
+homeworld_count %>% 
+  arrange(-count)
 ```
 
 Find the average height for each eye color. You might find some of the answers to be strange, but keep going! 
 
 ```{r}
-
+starwars %>% 
+  group_by(eye_color) %>% 
+  summarise(avg_height = mean(height, na.rm = T))
 
 ```
 
 So.... What's with the NAs? Filter down to just brown eyes find out what's going on. 
 
+### For the dark eye color, we only have 1 person that's missing the height
 
 ```{r}
-
-
+starwars %>% 
+  filter(eye_color == 'dark')
 ```
 
-Okay, so we have missing data here. Try summarising with `na.omit(height)` instead of just `height` or adding `na.rm = T` to the mean function inside summarize. 
+
+Okay, so we have missing data here. Try summarizing with `na.omit(height)` instead of just `height` or adding `na.rm = T` to the mean function inside summarize. 
 
 
 ```{r}
-
+print("Already did 😎")
 
 ```
 
@@ -165,6 +202,20 @@ So, who is the tallest male? How many blue eyed women are there? How many gender
 
 
 ```{r}
+starwars %>% 
+  select(name, sex, height) %>% 
+  filter(sex == 'male') %>% 
+  top_n(1)
 
+starwars %>% 
+  select(sex, eye_color) %>% 
+  filter(sex == "female", eye_color == "blue") %>% 
+  summarise(count= n())
 
+starwars %>%
+  select(gender)%>% 
+  count(gender) %>% 
+  summarise(n())
+  
+  
 ```
